@@ -22,6 +22,10 @@ impl Player {
         }
     }
 
+    pub fn reset_hands(&mut self) {
+        self.hands = vec![Hand::new()]
+    }
+
     // Will be implemented later on
     // pub fn double_down(&mut self, hand_index: usize) -> Option<()> {
     //     if let Some(hand) = self.hands.get_mut(hand_index) {
@@ -119,5 +123,17 @@ mod tests {
         player.add_card_to_hand(card2, 0);
 
         assert_eq!(player.hands[0].cards.len(), 2);
+    }
+
+    #[test]
+    fn test_reset_hands() {
+        let mut player = Player::new();
+        let card1 = Card::new(Rank::Ace, Suit::Spades);
+
+        player.add_card_to_hand(card1, 0);
+
+        assert_eq!(player.hands[0].cards.len(), 1);
+        player.reset_hands();
+        assert_eq!(player.hands[0].cards.len(), 0);
     }
 }

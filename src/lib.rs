@@ -1,8 +1,9 @@
 pub mod card;
-mod shoe;
-mod player;
-mod hand;
-mod game_settings;
+pub mod shoe;
+pub mod player;
+pub mod hand;
+pub mod game_settings;
+pub mod game;
 
 pub fn add_one(left: u64, right: u64) -> u64 {
     left + right

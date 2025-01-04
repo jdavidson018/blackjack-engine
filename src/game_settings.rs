@@ -22,7 +22,7 @@ impl GameSettings {
     /// # Examples
     ///
     /// ```
-    /// use blackjack::game_settings::GameSettings;
+    /// use blackjack_engine::game_settings::GameSettings;
     ///
     /// let settings = GameSettings::new(
     ///     "Alice".to_string(),
