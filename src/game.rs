@@ -1,5 +1,6 @@
 use std::io;
 use std::io::Write;
+use crate::card::Card;
 use crate::game::GameAction::{Hit, Stand};
 use crate::game_settings::GameSettings;
 use crate::hand::Hand;
@@ -10,7 +11,8 @@ pub struct Game {
     pub settings: GameSettings,
     pub shoe: Shoe,
     pub player: Player,
-    pub dealer: Player
+    pub dealer: Player,
+    pub state: GameState,
 }
 
 impl Game {
@@ -19,8 +21,13 @@ impl Game {
             player: Player::new(),
             dealer: Player::new(),
             shoe: Shoe::new(settings.deck_count as usize),
-            settings
+            settings,
+            state: GameState::WaitingToDeal
         }
+    }
+
+    pub fn get_state(&self) -> &GameState {
+        &self.state
     }
 
     // shuffle function
@@ -28,7 +35,7 @@ impl Game {
         self.shoe.shuffle();
     }
 
-    fn deal_initial_cards(&mut self) {
+    pub fn deal_initial_cards(&mut self) {
         // Deal two cards to player and dealer
         for _ in 0..2 {
             if let Some(card) = self.shoe.draw_card() {
@@ -38,80 +45,135 @@ impl Game {
                 self.dealer.add_card_to_hand(card, 0);
             }
         }
-    }
 
-    fn get_player_action(&self) -> GameAction {
-        loop {
-            print!("Would you like to (H)it or (S)tand? ");
-            io::stdout().flush().unwrap();
-
-            let mut input = String::new();
-            io::stdin().read_line(&mut input).unwrap();
-
-            if let Some(action) = GameAction::from_string(&input) {
-                return action;
-            }
-            println!("Invalid input. Please enter 'H' for Hit or 'S' for Stand.");
-        }
-    }
-
-    pub fn play_round(&mut self) {
-        // Shuffle and clean out hands from the last round
-        self.shuffle_shoe();
-        self.player.reset_hands();
-        self.dealer.reset_hands();
-
-        self.deal_initial_cards();
-
-        // Show initial hands
-        self.show_hands();
-
-        // Player's turn
-        loop {
-            let player_hand = &self.player.hands[0];
-            if player_hand.is_busted() {
-                println!("Bust! You lose!");
+        if self.player.hands[0].is_natural_blackjack() {
+            if self.dealer.hands[0].is_natural_blackjack() {
+                self.state = GameState::RoundComplete {
+                    dealer_hand: self.dealer.hands[0].clone(),
+                    player_hand: self.player.hands[0].clone(),
+                    outcome: RoundOutcome::Push,
+                };
+                return;
+            } else {
+                self.state = GameState::RoundComplete {
+                    dealer_hand: self.dealer.hands[0].clone(),
+                    player_hand: self.player.hands[0].clone(),
+                    outcome: RoundOutcome::PlayerWin
+                };
                 return;
             }
-
-            match self.get_player_action() {
-                Hit => {
-                    if let Some(card) = self.shoe.draw_card() {
-                        println!("You drew: {}", card.to_string());
-                        self.player.add_card_to_hand(card, 0);
-                    }
-                }
-                Stand => break,
-            }
         }
 
-        // Dealer's turn
-        println!("\nDealer's turn:");
-        self.show_hands();
-
-        let player_value = self.player.hands[0].best_value();
-        if !self.player.hands[0].is_busted() {
-            // Dealer hits until they beat the player or bust
-            while self.dealer.hands[0].best_value() <= player_value {
-                if let Some(card) = self.shoe.draw_card() {
-                    println!("Dealer drew: {}", card.to_string());
-                    self.dealer.add_card_to_hand(card, 0);
-                    self.show_hands();
-
-                    if self.dealer.hands[0].is_busted() {
-                        println!("Dealer busts! You win!");
-                        return;
-                    }
-                }
-            }
+        if self.dealer.hands[0].is_natural_blackjack() {
+            self.state = GameState::RoundComplete {
+                dealer_hand: self.dealer.hands[0].clone(),
+                player_hand: self.player.hands[0].clone(),
+                outcome: RoundOutcome::DealerWin
+            };
+            return;
         }
 
-        // Determine winner
-        self.determine_winner();
+        self.state = GameState::WaitingForPlayer {
+            dealer_up_card: self.dealer.hands[0].cards[0].clone(),
+            player_hand: self.player.hands[0].clone()
+        }
     }
 
-    fn test(player: &Hand) {
+    pub fn process_player_action(&mut self, action: GameAction) {
+        match action {
+            Hit => {
+                if let Some(card) = self.shoe.draw_card() {
+                    self.player.add_card_to_hand(card, 0);
+                    if self.player.hands[0].is_busted() {
+                        self.state = GameState::RoundComplete {
+                            dealer_hand: self.dealer.hands[0].clone(),
+                            player_hand: self.player.hands[0].clone(),
+                            outcome: RoundOutcome::DealerWin,
+                        };
+                        return;
+                    }
 
+                    if self.player.hands[0].is_blackjack() {
+                        self.state = GameState::DealerTurn{
+                            dealer_hand: self.dealer.hands[0].clone(),
+                            player_hand: self.player.hands[0].clone(),
+                        };
+                        return;
+                    }
+
+                    self.state = GameState::WaitingForPlayer {
+                        dealer_up_card: self.dealer.hands[0].cards[0].clone(),
+                        player_hand: self.player.hands[0].clone()
+                    }
+                }
+            },
+            Stand => {
+                self.state = GameState::DealerTurn {
+                    dealer_hand: self.dealer.hands[0].clone(),
+                    player_hand: self.player.hands[0].clone(),
+                }
+            }
+        }
+    }
+
+    pub fn next_dealer_turn(&mut self) {
+        match self.state {
+            GameState::DealerTurn { dealer_hand: _, player_hand: _ } => {
+                let dealer_value = self.dealer.hands[0].best_value();
+
+                // Dealer must hit on 16 or below
+                if dealer_value <= 16 {
+                    if let Some(card) = self.shoe.draw_card() {
+                        self.dealer.add_card_to_hand(card, 0);
+
+                        // Check if dealer busted
+                        if self.dealer.hands[0].is_busted() {
+                            self.state = GameState::RoundComplete {
+                                dealer_hand: self.dealer.hands[0].clone(),
+                                player_hand: self.player.hands[0].clone(),
+                                outcome: RoundOutcome::PlayerWin,
+                            };
+                            return;
+                        }
+
+                        // Continue dealer's turn
+                        self.state = GameState::DealerTurn {
+                            dealer_hand: self.dealer.hands[0].clone(),
+                            player_hand: self.player.hands[0].clone(),
+                        };
+                    }
+                } else {
+                    // Dealer stands, determine winner
+                    let player_value = self.player.hands[0].best_value();
+                    let dealer_value = self.dealer.hands[0].best_value();
+
+                    let outcome = if self.player.hands[0].is_busted() {
+                        RoundOutcome::DealerWin
+                    } else if dealer_value > player_value {
+                        RoundOutcome::DealerWin
+                    } else if player_value > dealer_value {
+                        RoundOutcome::PlayerWin
+                    } else {
+                        RoundOutcome::Push
+                    };
+
+                    self.state = GameState::RoundComplete {
+                        dealer_hand: self.dealer.hands[0].clone(),
+                        player_hand: self.player.hands[0].clone(),
+                        outcome,
+                    };
+                }
+            },
+            _ => {
+                // Do nothing if it's not dealer's turn
+            }
+        }
+    }
+
+    pub fn next_round(&mut self) {
+        self.player.reset_hands();
+        self.dealer.reset_hands();
+        self.state = GameState::WaitingToDeal
     }
 
     fn determine_winner(&self) {
@@ -132,17 +194,6 @@ impl Game {
         } else {
             println!("Push! Both have {}", player_value);
         }
-    }
-
-    pub fn show_hands(&self) {
-        println!("\nDealer's hand:");
-        self.dealer.print_active_hand();
-        println!("Dealer's total: {}", self.dealer.hands[0].best_value());
-
-        println!("\nYour hand:");
-        self.player.print_active_hand();
-        println!("Your total: {}", self.player.hands[0].best_value());
-        println!();
     }
 }
 
@@ -176,4 +227,27 @@ impl GameAction {
 
 pub enum HandResult {
     Blackjack, Bust, Other(Vec<i32>)
+}
+
+pub enum GameState {
+    WaitingToDeal,
+    WaitingForPlayer {
+        dealer_up_card: Card,
+        player_hand: Hand,
+    },
+    DealerTurn {
+        dealer_hand: Hand,
+        player_hand: Hand,
+    },
+    RoundComplete {
+        dealer_hand: Hand,
+        player_hand: Hand,
+        outcome: RoundOutcome,
+    }
+}
+
+pub enum RoundOutcome {
+    PlayerWin,
+    DealerWin,
+    Push,
 }

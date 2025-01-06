@@ -85,14 +85,28 @@ impl Hand {
             .unwrap_or_else(|| values[0])
     }
 
-    /// Returns true if the hand is a blackjack (21 with exactly 2 cards)
-    pub fn is_blackjack(&self) -> bool {
+    /// Returns true if the hand is a natural blackjack (21 with exactly 2 cards)
+    pub fn is_natural_blackjack(&self) -> bool {
         self.cards.len() == 2 && self.best_value() == 21
+    }
+
+    /// Returns true if the hand is a blackjack (21)
+    pub fn is_blackjack(&self) -> bool {
+        self.best_value() == 21
     }
 
     /// Returns true if the hand is busted (all possible totals > 21)
     pub fn is_busted(&self) -> bool {
         self.possible_values().iter().all(|&v| v > 21)
+    }
+
+    pub fn to_string(&self) -> String {
+        let mut hand_as_string = String::from("");
+        for card in self.cards.iter() {
+            hand_as_string.push_str(&*card.to_string());
+            hand_as_string.push(' ');
+        }
+        hand_as_string
     }
 }
 
