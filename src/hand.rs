@@ -4,7 +4,7 @@ use crate::card::{Card, Rank};
 #[derive(Clone, Debug)]
 pub struct Hand {
     /// Current bet amount for this hand
-    pub bet: u32,
+    pub bet: f64,
     /// Cards in the hand
     pub cards: Vec<Card>,
 }
@@ -13,13 +13,13 @@ impl Hand {
     /// Creates a new empty hand with the default bet of 100
     pub fn new() -> Self {
         Self {
-            bet: 100,
+            bet: 100f64,
             cards: Vec::new(),
         }
     }
 
     /// Creates a new hand with a specific bet amount
-    pub fn with_bet(bet: u32) -> Self {
+    pub fn with_bet(bet: f64) -> Self {
         Self {
             bet,
             cards: Vec::new(),
@@ -38,13 +38,8 @@ impl Hand {
 
     /// Doubles the current bet amount
     /// Returns Ok(()) if successful, or Err if doubling would cause overflow
-    pub fn double_bet(&mut self) -> Result<(), &'static str> {
-        self.bet.checked_mul(2)
-            .map(|new_bet| {
-                self.bet = new_bet;
-                Ok(())
-            })
-            .unwrap_or(Err("Bet overflow occurred"))
+    pub fn double_bet(&mut self) {
+        self.bet = self.bet * 2f64;
     }
 
     /// Calculates all possible hand values, accounting for aces
@@ -118,14 +113,14 @@ mod tests {
     #[test]
     fn test_new_hand() {
         let hand = Hand::new();
-        assert_eq!(hand.bet, 100);
+        assert_eq!(hand.bet, 100f64);
         assert!(hand.cards.is_empty());
     }
 
     #[test]
     fn test_with_bet() {
-        let hand = Hand::with_bet(200);
-        assert_eq!(hand.bet, 200);
+        let hand = Hand::with_bet(200f64);
+        assert_eq!(hand.bet, 200f64);
     }
 
     #[test]

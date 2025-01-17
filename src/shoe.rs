@@ -5,6 +5,7 @@ use crate::card::{Card, Rank, Suit};
 pub struct Shoe {
     pub cards: Vec<Card>,
     pub discarded: Vec<Card>,
+    number_of_decks: usize
     // Count will be implemented at a later date
     // pub count: i32,
 }
@@ -27,7 +28,8 @@ impl Shoe {
 
         Shoe {
             cards,
-            discarded: Vec::with_capacity(capacity)
+            discarded: Vec::with_capacity(capacity),
+            number_of_decks: num_decks
         }
     }
 
@@ -47,6 +49,23 @@ impl Shoe {
         let card = self.cards.pop()?;
         self.discarded.push(card.clone());
         Some(card)
+    }
+
+    pub fn ensure_cards_for_players(&mut self, num_players: usize) {
+        // Calculate minimum cards needed:
+        // (num_players + 1 for dealer) * 2 initial cards * 2 for potential additional draws
+        let min_cards_needed = (num_players + 1) * 2 * 2;
+
+        if self.cards.len() < min_cards_needed {
+            // Create new shoe with calculated number of decks
+            let new_shoe = Shoe::new(self.number_of_decks);
+            self.cards = new_shoe.cards;
+            self.discarded.clear();
+
+            // Shuffle the new shoe
+            self.shuffle();
+            println!("Starting a new Shoe");
+        }
     }
 }
 

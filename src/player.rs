@@ -3,7 +3,7 @@ use crate::hand::Hand;
 
 pub struct Player {
     pub hands: Vec<Hand>,
-    pub bank_roll: i32
+    pub bank_roll: f64
     // I'll eventually want to track previous_hands, but not necessary yet
     // pub previous_hands: Vec<Hand>,
 }
@@ -12,7 +12,7 @@ impl Player {
     pub fn new() -> Player {
         Player {
             hands: vec![Hand::new()],
-            bank_roll: 10_000
+            bank_roll: 10_000f64
         }
     }
 
@@ -25,49 +25,6 @@ impl Player {
     pub fn reset_hands(&mut self) {
         self.hands = vec![Hand::new()]
     }
-
-    // Will be implemented later on
-    // pub fn double_down(&mut self, hand_index: usize) -> Option<()> {
-    //     if let Some(hand) = self.hands.get_mut(hand_index) {
-    //         // Deduct money from bankroll first
-    //         let additional_bet = hand.bet;
-    //         if self.bank_roll >= additional_bet as i32 {
-    //             self.bank_roll -= additional_bet as i32;
-    //             hand.double_down().ok()?;
-    //             Some(())
-    //         } else {
-    //             None
-    //         }
-    //     } else {
-    //         None
-    //     }
-    // }
-
-    // Will complete implementation later on
-    // pub fn split_hand(&mut self, hand_index: usize) -> Option<()> {
-    //     if let Some(hand) = self.hands.get_mut(hand_index) {
-    //         if hand.cards.len() != 2 {
-    //             return None;
-    //         }
-    //
-    //         // Check if cards have same rank
-    //         if hand.cards[0].rank != hand.cards[1].rank {
-    //             return None;
-    //         }
-    //
-    //         let split_card = hand.cards.pop()?;
-    //         let mut new_hand = Hand::new();
-    //         new_hand.bet = hand.bet;
-    //         new_hand.add_card_to_hand(split_card);
-    //
-    //         // Deduct additional bet from bankroll
-    //         self.bank_roll -= hand.bet as i32;
-    //         self.hands.push(new_hand);
-    //         Some(())
-    //     } else {
-    //         None
-    //     }
-    // }
 
     pub fn print_active_hand(&self) {
         for (i, hand) in self.hands.iter().enumerate() {
@@ -89,7 +46,7 @@ mod tests {
     fn test_new_player() {
         let player = Player::new();
         assert_eq!(player.hands.len(), 1);
-        assert_eq!(player.bank_roll, 10_000);
+        assert_eq!(player.bank_roll, 10_000f64);
         assert_eq!(player.hands[0].cards.len(), 0);
     }
 
