@@ -26,6 +26,13 @@ impl Hand {
         }
     }
 
+    pub fn with_card(card: Card) -> Self {
+        Self {
+            bet: 0f64,
+            cards: vec![card],
+        }
+    }
+
     /// Adds a card to the hand
     pub fn add_card(&mut self, card: Card) {
         self.cards.push(card);

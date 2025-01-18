@@ -89,7 +89,7 @@ impl Game {
         }
 
         self.state = GameState::WaitingForPlayer {
-            dealer_up_card: self.dealer.hands[0].cards[0].clone(),
+            dealer_hand: self.dealer.hands[0].clone(),
             player_hand: self.player.hands[0].clone(),
             player_bankroll: self.player.bank_roll,
         }
@@ -120,7 +120,7 @@ impl Game {
                     }
 
                     self.state = GameState::WaitingForPlayer {
-                        dealer_up_card: self.dealer.hands[0].cards[0].clone(),
+                        dealer_hand: self.dealer.hands[0].clone(),
                         player_hand: self.player.hands[0].clone(),
                         player_bankroll: self.player.bank_roll,
                     }
@@ -279,7 +279,7 @@ pub enum GameState {
         player_bankroll: f64,
     },
     WaitingForPlayer {
-        dealer_up_card: Card,
+        dealer_hand: Hand,
         player_hand: Hand,
         player_bankroll: f64,
     },
