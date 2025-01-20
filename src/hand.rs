@@ -1,4 +1,7 @@
+use strum_macros::EnumIter;
 use crate::card::{Card, Rank};
+use crate::game::GameAction;
+use crate::game::GameAction::{Double, Hit, Split, Stand};
 
 /// Represents a player's hand in a blackjack game
 #[derive(Clone, Debug)]
@@ -7,6 +10,28 @@ pub struct Hand {
     pub bet: f64,
     /// Cards in the hand
     pub cards: Vec<Card>,
+    /// How the hand turned out
+    pub outcome: Option<HandOutcome>
+}
+
+#[derive(Debug, Eq, Hash, PartialEq, Clone)]
+#[derive(EnumIter)]
+pub enum HandOutcome {
+    Win,
+    Loss,
+    Push,
+    Blackjack
+}
+
+impl HandOutcome {
+    pub fn to_string(&self) -> String {
+        match self {
+            HandOutcome::Win => "WIN".to_string(),
+            HandOutcome::Loss => "LOSS".to_string(),
+            HandOutcome::Push => "PUSH".to_string(),
+            HandOutcome::Blackjack => "BLACKJACK".to_string(),
+        }
+    }
 }
 
 impl Hand {
@@ -15,6 +40,7 @@ impl Hand {
         Self {
             bet: 100f64,
             cards: Vec::new(),
+            outcome: None
         }
     }
 
@@ -23,6 +49,7 @@ impl Hand {
         Self {
             bet,
             cards: Vec::new(),
+            outcome: None
         }
     }
 
@@ -30,6 +57,15 @@ impl Hand {
         Self {
             bet: 0f64,
             cards: vec![card],
+            outcome: None
+        }
+    }
+
+    pub fn with_card_and_bet(card: Card, bet: f64) -> Self {
+        Self {
+            bet,
+            cards: vec![card],
+            outcome: None
         }
     }
 

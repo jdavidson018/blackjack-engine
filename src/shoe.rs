@@ -1,3 +1,5 @@
+use std::thread::sleep;
+use std::time::Duration;
 use strum::IntoEnumIterator;
 use rand::seq::SliceRandom;
 use crate::card::{Card, Rank, Suit};
@@ -65,6 +67,7 @@ impl Shoe {
             // Shuffle the new shoe
             self.shuffle();
             println!("Starting a new Shoe");
+            sleep(Duration::from_millis(2000));
         }
     }
 }
